@@ -153,10 +153,53 @@ def final_test(splits):
     x_train,y_train,_,_ = splits[3]
     construct_decision_tree(x_train,y_train,decision_tree)
     print("FINAL TEST RESULTS")
+    print(test_set[0].shape)
     test(decision_tree, test_set[0], test_set[1])
+    return 0
+
+def random_forest(splits):
+    forest = []
+    for i in range(9):
+        x_train, y_train, _, _ = splits[i]
+        n=2000
+        for k in range(11):
+            indices = np.random.choice(x_train.shape[0], size=n, replace=True)
+            x_random = x_train[indices]
+            y_random = y_train[indices]
+            decision_tree = np.zeros(60)
+            construct_decision_tree(x_random,y_random,decision_tree)
+            forest.append(decision_tree)
+
+    
+    return forest
+
+def final_test_forest(splits,test_set):
+    forest = random_forest(splits)
+    x_test = test_set[0]
+    y_test = test_set[1]
+    success = 0
+    fail = 0
+    for i in range(x_test.shape[0]):
+        e_vote = 0
+        p_vote = 0
+        for j in range(len(forest)):
+            prediction = predict(forest[j],x_test[i])
+            if prediction == 'e': e_vote+=1
+            else: p_vote +=1
+        if (p_vote>e_vote): consensus='p'
+        else: consensus='e'
+        if consensus==y_test[i]: success+=1
+        else: fail+=1
+    total_tests = success + fail
+    accuracy = (success / total_tests * 100) if total_tests > 0 else 0
+    print("--- Random Forest Model Evaluation on Test Set ---")
+    print(f"Number of trees in the forest: {len(forest)}")
+    print(f"Total tests: {total_tests}")
+    print(f"Successful predictions: {success}")
+    print(f"Failed predictions: {fail}")
+    print(f"Overall Accuracy: {accuracy:.2f}%")
     return 0
 
 
 
-
-final_test(splits)
+final_test_forest(splits,test_set)
