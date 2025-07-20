@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 def featurize_data(path):
     df = pd.read_csv(path)
@@ -15,8 +16,12 @@ def get_x_y(path):
     y = df['class'].to_numpy()
     x = df.drop(columns=['class']).to_numpy()
 
-
-    folds = np.array_split(np.arange(8124), 10)
+    x, x_test, y, y_test = train_test_split(
+    x, y, test_size=0.1, random_state=42, stratify=y
+    )
+    n_samples = len(x)
+    indices = np.arange(n_samples)
+    folds = np.array_split(indices, 10)
 
     splits = []
     for i in range(10):
@@ -26,7 +31,7 @@ def get_x_y(path):
         x_val, y_val = x[val_idx], y[val_idx]
         splits.append((x_train, y_train, x_val, y_val))
     
-    return splits
+    return splits, (x_test, y_test)
 
 featurize_data('./mushrooms.csv')
 

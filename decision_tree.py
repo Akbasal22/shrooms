@@ -4,15 +4,10 @@ from data import get_x_y
 from scipy.stats import entropy
 
 
-splits = get_x_y('./processed.csv')
+splits, test_set = get_x_y('./processed.csv')
 def entropy_function(nodes):
-    e = 0
-    p = 0
-    for i in range(len(nodes)):
-        if(nodes[i] == 'e'):
-            e=e+1
-        else:
-            p=p+1
+    e = np.sum(nodes=='e')
+    p=np.sum(nodes=='p')
     
     prob = e/(e+p)
     base=2
@@ -73,7 +68,7 @@ def construct_decision_tree(x_train,y_train,decision_tree,index=0, iterations=5)
     # tree will be an array
     # where root is i, left node is 2i+1 and right node is 2i+2
     right_x_train,right_y_train,left_x_train,left_y_train,max_gain, max_gain_index = calculate_max_information_gain(x_train, y_train)
-    if(max_gain<0.001 or iterations==0):     
+    if(max_gain<0.01 or iterations==0):     
         if np.sum(y_train == 'e') > np.sum(y_train == 'p'):
             decision_tree[index] = -1  # 'e'
         else:
@@ -88,34 +83,80 @@ def construct_decision_tree(x_train,y_train,decision_tree,index=0, iterations=5)
 def test(decision_tree, x_val, y_val,):
     success =0
     fail = 0
+    e = 0
+    p = 0
+    true_pos = 0
+    true_neg = 0
+    false_pos = 0
+    false_neg = 0
+    #e is negative(safe to eat)
+    #p is positive(unsafe to eat)
     for i in range(len(x_val)):
-        if predict(decision_tree,x_val[i],y_val[i])==y_val[i]:
+        prediction = predict(decision_tree,x_val[i])
+        if prediction=='e' and prediction==y_val[i]:
+            e+=1
             success+=1
-        else:
+            true_neg+=1
+        elif prediction=='e' and prediction!=y_val[i]:
+            e+=1
             fail+=1
+            false_neg+=1
+        elif prediction=='p' and prediction==y_val[i]:
+            p+=1
+            success+=1
+            true_pos+=1
+        else:
+            p+=1
+            fail+=1
+            false_pos+=1
+    print(f"{success+fail} tests")
+    print(f"Model predicted {e} times e")
+    print(f"Model predicted {p} times p")
+    print(f"true positive: {true_pos}")
+    print(f"true negative: {true_neg}")
+    print(f"false positive: {false_pos}")
+    print(f"false negative: {false_neg}")
     print(f"Successful attempts: {success}")
     print(f"Failed attempts: {fail}")
     print(f"overall success: %{(success/(success+fail)*100):.2f}")
+
+    return prediction
+
+def predict(decision_tree,x_in,index=0):
+    feature_index = int(decision_tree[index])
+    if feature_index==0:
+        print("feature index is 0, possible error")
+    if feature_index == -1:
+        return 'e'
+    elif feature_index == -2: 
+        return 'p'
+    if x_in[feature_index]:
+        index = index*2 + 2
+    else: index = index*2+1
+    if index >= len(decision_tree): 
+        print(f"ERROR, PREDICTION OUT OF BOUNDS")
+    return predict(decision_tree,x_in,index)
+       
+ 
+def cross_testing(splits):
+    for i in range(9):
+        decision_tree = np.zeros(60)
+        x_train,y_train,x_val,y_val = splits[i]
+        construct_decision_tree(x_train,y_train,decision_tree)
+        print('\n')
+        print(f"MODEL {i+1}'S SUCCES RATE:")
+        test(decision_tree,x_val,y_val)
+        #output results say that model 4 and 8 is the best wint %99.45 success rate
+
+def final_test(splits):
+    decision_tree=np.zeros(60)
+    x_train,y_train,_,_ = splits[3]
+    construct_decision_tree(x_train,y_train,decision_tree)
+    print("FINAL TEST RESULTS")
+    test(decision_tree, test_set[0], test_set[1])
     return 0
 
-def predict(decision_tree,x_in,y_in,index=0):
-    if x_in[index]:
-        index = index*2 + 2
-        if decision_tree[index] == 0:
-            return 'e'
-        else: 
-            return predict(decision_tree,x_in,y_train,index)
-    else:
-        index=index*2+1
-        if decision_tree[index]==0:
-            return 'p'
-        else:
-            return predict(decision_tree,x_in,y_train,index)
 
 
 
-x_train,y_train,x_val,y_val = splits[0]
-
-decision_tree = np.zeros(62)
-test(decision_tree,x_val,y_val)
-
+final_test(splits)
