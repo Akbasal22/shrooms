@@ -73,19 +73,49 @@ def construct_decision_tree(x_train,y_train,decision_tree,index=0, iterations=5)
     # tree will be an array
     # where root is i, left node is 2i+1 and right node is 2i+2
     right_x_train,right_y_train,left_x_train,left_y_train,max_gain, max_gain_index = calculate_max_information_gain(x_train, y_train)
-    if(max_gain<0.001): return
+    if(max_gain<0.001 or iterations==0):     
+        if np.sum(y_train == 'e') > np.sum(y_train == 'p'):
+            decision_tree[index] = -1  # 'e'
+        else:
+            decision_tree[index] = -2  # 'p'
+        return
     decision_tree[index] = max_gain_index
     if (iterations > 0):
         construct_decision_tree(left_x_train, left_y_train,decision_tree, 2*index+1, iterations-1)
         construct_decision_tree(right_x_train, right_y_train, decision_tree, 2*index+2, iterations-1)
-
-    
- 
     return 0
+
+def test(decision_tree, x_val, y_val,):
+    success =0
+    fail = 0
+    for i in range(len(x_val)):
+        if predict(decision_tree,x_val[i],y_val[i])==y_val[i]:
+            success+=1
+        else:
+            fail+=1
+    print(f"Successful attempts: {success}")
+    print(f"Failed attempts: {fail}")
+    print(f"overall success: %{(success/(success+fail)*100):.2f}")
+    return 0
+
+def predict(decision_tree,x_in,y_in,index=0):
+    if x_in[index]:
+        index = index*2 + 2
+        if decision_tree[index] == 0:
+            return 'e'
+        else: 
+            return predict(decision_tree,x_in,y_train,index)
+    else:
+        index=index*2+1
+        if decision_tree[index]==0:
+            return 'p'
+        else:
+            return predict(decision_tree,x_in,y_train,index)
+
+
 
 x_train,y_train,x_val,y_val = splits[0]
 
-decision_tree = np.zeros(33)
-construct_decision_tree(x_train,y_train,decision_tree)
-print(decision_tree)
+decision_tree = np.zeros(62)
+test(decision_tree,x_val,y_val)
 

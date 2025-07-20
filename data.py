@@ -32,4 +32,5 @@ featurize_data('./mushrooms.csv')
 
 
 get_x_y('./processed.csv')
+# lstm
 
