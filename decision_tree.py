@@ -8,7 +8,6 @@ splits, test_set = get_x_y('./processed.csv')
 def entropy_function(nodes):
     e = np.sum(nodes=='e')
     p=np.sum(nodes=='p')
-    
     prob = e/(e+p)
     base=2
     pk = np.array([prob, 1-prob])
@@ -16,34 +15,33 @@ def entropy_function(nodes):
 
 
 def calculate_information_gain(x_train,y_train, index):
-    left_x_train = []
-    right_x_train = []
-    left_y_train = []
-    right_y_train = []
-    right_count = 0
-    left_count = 0
-    for i in range(len(x_train)):
-        if x_train[i][index]:
-            right_x_train.append(x_train[i])
-            right_y_train.append(y_train[i])
-            right_count+=1
-        else:
-            left_x_train.append(x_train[i])
-            left_y_train.append(y_train[i])
-            left_count+=1
-    right_weight = right_count/(right_count+left_count)
-    left_weight = left_count/(right_count+left_count)
-    if left_count == 0 or right_count == 0:
-        return right_x_train , right_y_train , left_x_train , left_y_train , 0
-    information_gain = entropy_function(np.array(y_train)) - ((right_weight*entropy_function(np.array(right_y_train)))+(left_weight*entropy_function(np.array(left_y_train))))
-    return (
-    np.array(right_x_train),
-    np.array(right_y_train),
-    np.array(left_x_train),
-    np.array(left_y_train),
-    information_gain
-)
+    is_right = x_train[:, index].astype(bool)
 
+    right_y_train = y_train[is_right]
+    left_y_train = y_train[~is_right]
+    
+    right_count = len(right_y_train)
+    left_count = len(left_y_train)
+    total_count = right_count + left_count
+    parent_entropy = entropy_function(y_train)
+    right_entropy = entropy_function(right_y_train) if right_count > 0 else 0
+    left_entropy = entropy_function(left_y_train) if left_count > 0 else 0
+
+    if total_count == 0:
+        return np.array([]), np.array([]), np.array([]), np.array([]), 0
+
+    right_weight = right_count / total_count
+    left_weight = left_count / total_count
+
+    information_gain = parent_entropy - (right_weight * right_entropy + left_weight * left_entropy)
+
+    return (
+        x_train[is_right],
+        right_y_train,
+        x_train[~is_right],
+        left_y_train,
+        information_gain,
+    )
 
 def calculate_max_information_gain(x_train,y_train):
     gain = 0
@@ -148,6 +146,7 @@ def cross_testing(splits):
         test(decision_tree,x_val,y_val)
         #output results say that model 4 and 8 is the best wint %99.45 success rate
 
+
 def final_test(splits):
     decision_tree=np.zeros(60)
     x_train,y_train,_,_ = splits[3]
@@ -161,7 +160,7 @@ def random_forest(splits):
     forest = []
     for i in range(9):
         x_train, y_train, _, _ = splits[i]
-        n=2000
+        n=1000
         for k in range(11):
             indices = np.random.choice(x_train.shape[0], size=n, replace=True)
             x_random = x_train[indices]
@@ -169,8 +168,6 @@ def random_forest(splits):
             decision_tree = np.zeros(60)
             construct_decision_tree(x_random,y_random,decision_tree)
             forest.append(decision_tree)
-
-    
     return forest
 
 def final_test_forest(splits,test_set):
@@ -200,6 +197,5 @@ def final_test_forest(splits,test_set):
     print(f"Overall Accuracy: {accuracy:.2f}%")
     return 0
 
-
-
 final_test_forest(splits,test_set)
+
